@@ -9,6 +9,12 @@
 /// <reference types="debug" />
 /// <reference types="pouchdb-find" />
 
+interface Blob {
+    readonly size: number;
+    readonly type: string;
+    slice(start?: number, end?: number, contentType?: string): Blob;
+}
+
 interface Buffer extends Uint8Array {
     write(string: string, offset?: number, length?: number, encoding?: string): number;
     toString(encoding?: string, start?: number, end?: number): string;
@@ -626,7 +632,7 @@ declare namespace PouchDB {
         };
     }
 
-    interface Database<Content extends {} = {}>  {
+    interface Database<Content extends {} = {}> extends EventEmitter {
         /** The name passed to the PouchDB constructor and unique identifier of the database. */
         name: string;
 

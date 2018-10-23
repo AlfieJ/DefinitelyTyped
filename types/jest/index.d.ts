@@ -16,6 +16,7 @@
 //                 Andrew Makarov <https://github.com/r3nya>
 //                 Martin Hochel <https://github.com/hotell>
 //                 Sebastian Sebald <https://github.com/sebald>
+//                 Andy <https://github.com/andys8>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // TypeScript Version: 2.3
 
@@ -317,6 +318,7 @@ declare namespace jest {
     }
 
     interface MatcherUtils {
+        readonly expand: boolean;
         readonly isNot: boolean;
         utils: {
             readonly EXPECTED_COLOR: (text: string) => string;
@@ -482,6 +484,10 @@ declare namespace jest {
          */
         not: Matchers<R>;
         /**
+         * Ensure that a mock function is called with specific arguments on an Nth call.
+         */
+        nthCalledWith(nthCall: number, ...params: any[]): R;
+        /**
          * Ensure that the nth call to a mock function has returned a specified value.
          */
         nthReturnedWith(n: number, value: any): R;
@@ -504,6 +510,10 @@ declare namespace jest {
          * Ensures that a mock function is called.
          */
         toBeCalled(): R;
+        /**
+         * Ensures that a mock function is called an exact number of times.
+         */
+        toBeCalledTimes(expected: number): R;
         /**
          * Ensure that a mock function is called with specific arguments.
          */
@@ -656,7 +666,7 @@ declare namespace jest {
          * This ensures that a value matches the most recent snapshot with property matchers.
          * Check out [the Snapshot Testing guide](http://facebook.github.io/jest/docs/snapshot-testing.html) for more information.
          */
-        toMatchSnapshot<T extends {[P in keyof R]: Expect['any']}>(propertyMatchers: Partial<T>, snapshotName?: string): R;
+        toMatchSnapshot<T extends {[P in keyof R]: any}>(propertyMatchers: Partial<T>, snapshotName?: string): R;
         /**
          * This ensures that a value matches the most recent snapshot.
          * Check out [the Snapshot Testing guide](http://facebook.github.io/jest/docs/snapshot-testing.html) for more information.
@@ -667,7 +677,7 @@ declare namespace jest {
          * Instead of writing the snapshot value to a .snap file, it will be written into the source code automatically.
          * Check out [the Snapshot Testing guide](http://facebook.github.io/jest/docs/snapshot-testing.html) for more information.
          */
-        toMatchInlineSnapshot<T extends {[P in keyof R]: Expect['any']}>(propertyMatchers: Partial<T>, snapshot?: string): R;
+        toMatchInlineSnapshot<T extends {[P in keyof R]: any}>(propertyMatchers: Partial<T>, snapshot?: string): R;
         /**
          * This ensures that a value matches the most recent snapshot with property matchers.
          * Instead of writing the snapshot value to a .snap file, it will be written into the source code automatically.
@@ -718,15 +728,7 @@ declare namespace jest {
         (...args: any[]): any;
     }
 
-    interface SpyInstance<T = {}> extends MockInstance<T> {
-        /**
-         * Removes the mock and restores the initial implementation.
-         *
-         * This is useful when you want to mock functions in certain test cases and restore the
-         * original implementation in others.
-         */
-        mockRestore(): void;
-    }
+    interface SpyInstance<T = {}> extends MockInstance<T> {}
 
     /**
      * Wrap module with mock definitions
@@ -769,13 +771,25 @@ declare namespace jest {
          */
         mockReset(): void;
         /**
+         * Does everything that `mockFn.mockReset()` does, and also restores the original (non-mocked) implementation.
+         *
+         * This is useful when you want to mock functions in certain test cases and restore the original implementation in others.
+         *
+         * Beware that `mockFn.mockRestore` only works when mock was created with `jest.spyOn`. Thus you have to take care of restoration
+         * yourself when manually assigning `jest.fn()`.
+         *
+         * The [`restoreMocks`](https://jestjs.io/docs/en/configuration.html#restoremocks-boolean) configuration option is available
+         * to restore mocks automatically between tests.
+         */
+        mockRestore(): void;
+        /**
          * Accepts a function that should be used as the implementation of the mock. The mock itself will still record
          * all calls that go into and instances that come from itself – the only difference is that the implementation
          * will also be executed when the mock is called.
          *
          * Note: `jest.fn(implementation)` is a shorthand for `jest.fn().mockImplementation(implementation)`.
          */
-        mockImplementation(fn: (...args: any[]) => any): Mock<T>;
+        mockImplementation(fn?: (...args: any[]) => any): Mock<T>;
         /**
          * Accepts a function that will be used as an implementation of the mock for one call to the mocked function.
          * Can be chained so that multiple function calls produce different results.

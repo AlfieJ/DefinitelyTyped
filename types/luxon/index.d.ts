@@ -1,4 +1,4 @@
-// Type definitions for luxon 1.2
+// Type definitions for luxon 1.4
 // Project: https://github.com/moment/luxon#readme
 // Definitions by: Colby DeHart <https://github.com/colbydehart>
 //                 Hyeonseok Yang <https://github.com/FourwingsY>
@@ -154,6 +154,7 @@ declare module 'luxon' {
             hour: number;
             invalidReason: string;
             isInDST: boolean;
+            isInLeapYear: boolean;
             isOffsetFixed: boolean;
             isValid: boolean;
             locale: string;
@@ -319,8 +320,8 @@ declare module 'luxon' {
         }
 
         type IntervalObject = {
-            start: DateTime;
-            end: DateTime;
+            start?: DateTime;
+            end?: DateTime;
         };
 
         class Interval {
@@ -338,8 +339,8 @@ declare module 'luxon' {
             ): Interval;
             static fromISO(string: string, options?: DateTimeOptions): Interval;
             static invalid(reason?: string): Interval;
-            static merge(intervals: Interval[]): [Interval];
-            static xor(intervals: Interval[]): [Interval];
+            static merge(intervals: Interval[]): Interval[];
+            static xor(intervals: Interval[]): Interval[];
             end: DateTime;
             invalidReason: string;
             isValid: boolean;

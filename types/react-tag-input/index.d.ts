@@ -4,7 +4,7 @@
 //                  Jan Karres <https://github.com/jankarres>
 //                  Matthew Berryman <https://github.com/matthewberryman>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
-// TypeScript Version: 2.6
+// TypeScript Version: 2.8
 
 import * as React from "react";
 
@@ -19,7 +19,7 @@ export interface ReactTagsProps {
     handleDelete: ((i: number) => void);
     handleDrag?: ((tag: { id: string; text: string; }, currPos: number, newPos: number) => void);
     handleInputChange?: ((value: string) => void);
-    handleFilterSuggestions?: ((textInputValue: string, possibleSuggestionsArray: Array<{ id: string, text: string }>) => boolean);
+    handleFilterSuggestions?: ((textInputValue: string, possibleSuggestionsArray: Array<{ id: string, text: string }>) => Array<{ id: string, text: string }>);
     handleInputBlur?: ((textInputValue: string) => void);
 
     autofocus?: boolean;

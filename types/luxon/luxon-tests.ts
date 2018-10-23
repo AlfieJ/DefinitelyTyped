@@ -33,6 +33,7 @@ getters.zoneName;
 getters.offset;
 getters.daysInMonth;
 getters.ordinal;
+getters.isInLeapYear;
 
 dt.toLocaleString();
 dt.toLocaleString(DateTime.DATE_MED);
@@ -78,6 +79,7 @@ const i = Interval.fromDateTimes(now, later);
 i.length();
 i.length('years');
 i.contains(DateTime.local(2019));
+i.set({end: DateTime.local(2020)});
 
 i.toISO();
 i.toString();

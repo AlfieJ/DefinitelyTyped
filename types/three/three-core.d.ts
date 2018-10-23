@@ -324,7 +324,7 @@ export namespace AnimationUtils {
 }
 
 export class KeyframeTrack {
-    constructor(name: string, times: any[], values: any[], interpolation: InterpolationModes);
+    constructor(name: string, times: any[], values: any[], interpolation?: InterpolationModes);
 
     name: string;
     times: any[];
@@ -411,23 +411,23 @@ export class BooleanKeyframeTrack extends KeyframeTrack {
 }
 
 export class ColorKeyframeTrack extends KeyframeTrack {
-    constructor(name: string, times: any[], values: any[], interpolation: InterpolationModes);
+    constructor(name: string, times: any[], values: any[], interpolation?: InterpolationModes);
 }
 
 export class NumberKeyframeTrack extends KeyframeTrack {
-    constructor(name: string, times: any[], values: any[], interpolation: InterpolationModes);
+    constructor(name: string, times: any[], values: any[], interpolation?: InterpolationModes);
 }
 
 export class QuaternionKeyframeTrack extends KeyframeTrack {
-    constructor(name: string, times: any[], values: any[], interpolation: InterpolationModes);
+    constructor(name: string, times: any[], values: any[], interpolation?: InterpolationModes);
 }
 
 export class StringKeyframeTrack extends KeyframeTrack {
-    constructor(name: string, times: any[], values: any[], interpolation: InterpolationModes);
+    constructor(name: string, times: any[], values: any[], interpolation?: InterpolationModes);
 }
 
 export class VectorKeyframeTrack extends KeyframeTrack {
-    constructor(name: string, times: any[], values: any[], interpolation: InterpolationModes);
+    constructor(name: string, times: any[], values: any[], interpolation?: InterpolationModes);
 }
 
 // Cameras ////////////////////////////////////////////////////////////////////////////////////////
@@ -1059,7 +1059,7 @@ export class DirectGeometry extends EventDispatcher {
 
     // EventDispatcher mixins
     addEventListener(type: string, listener: (event: Event) => void ): void;
-    hasEventListener(type: string, listener: (event: Event) => void): void;
+    hasEventListener(type: string, listener: (event: Event) => void): boolean;
     removeEventListener(type: string, listener: (event: Event) => void): void;
     dispatchEvent(event: { type: string; [attachment: string]: any; }): void;
 }
@@ -1099,17 +1099,17 @@ export class EventDispatcher {
 
     /**
      * Adds a listener to an event type.
-     * @param type The type of the listener that gets removed.
-     * @param listener The listener function that gets removed.
+     * @param type The type of event to listen to.
+     * @param listener The function that gets called when the event is fired.
      */
     addEventListener(type: string, listener: (event: Event) => void ): void;
 
     /**
-     * Adds a listener to an event type.
-     * @param type The type of the listener that gets removed.
-     * @param listener The listener function that gets removed.
+     * Checks if listener is added to an event type.
+     * @param type The type of event to listen to.
+     * @param listener The function that gets called when the event is fired.
      */
-    hasEventListener(type: string, listener: (event: Event) => void): void;
+    hasEventListener(type: string, listener: (event: Event) => void): boolean;
 
     /**
      * Removes a listener from an event type.
@@ -1442,9 +1442,18 @@ export class Geometry extends EventDispatcher {
 
     // EventDispatcher mixins
     addEventListener(type: string, listener: (event: Event) => void ): void;
-    hasEventListener(type: string, listener: (event: Event) => void): void;
+    hasEventListener(type: string, listener: (event: Event) => void): boolean;
     removeEventListener(type: string, listener: (event: Event) => void): void;
     dispatchEvent(event: { type: string; [attachment: string]: any; }): void;
+}
+
+/**
+ * @see <a href="https://github.com/mrdoob/three.js/blob/master/examples/js/BufferGeometryUtils.js">examples/js/BufferGeometryUtils.js</a>
+ */
+export namespace BufferGeometryUtils {
+    export function mergeBufferGeometries(geometries: BufferGeometry[]): BufferGeometry;
+    export function computeTangents(geometry: BufferGeometry): null;
+    export function mergeBufferAttributes(attributes: BufferAttribute[]): BufferAttribute;
 }
 
 /**
@@ -1848,6 +1857,7 @@ export interface Intersection {
     face?: Face3 | null;
     faceIndex?: number;
     object: Object3D;
+    uv?: Vector2;
 }
 
 export interface RaycasterParameters {
@@ -2229,6 +2239,7 @@ export class FileLoader {
     setPath(path: string) : FileLoader;
     setResponseType(responseType: string) : FileLoader;
     setWithCredentials(value: string): FileLoader;
+    setRequestHeader(value: {[header: string]: string}): FileLoader;
 }
 
 export class FontLoader {
@@ -2302,7 +2313,20 @@ export class LoadingManager {
      */
     onError: (url: string) => void;
 
+    /**
+     * If provided, the callback will be passed each resource URL before a request is sent.
+     * The callback may return the original URL, or a new URL to override loading behavior.
+     * This behavior can be used to load assets from .ZIP files, drag-and-drop APIs, and Data URIs.
+     * @param callback URL modifier callback. Called with url argument, and must return resolvedURL.
+     */
     setURLModifier(callback?: (url: string) => string): void;
+
+    /**
+     * Given a URL, uses the URL modifier callback (if any) and returns a resolved URL.
+     * If no URL modifier is set, returns the original URL.
+     * @param url the url to load
+     */
+    resolveURL(url: string): string;
 
     itemStart(url: string): void;
     itemEnd(url: string): void;
@@ -2486,7 +2510,7 @@ export class Material extends EventDispatcher {
     /**
      * The tranparency of the .blendDst. Default is null.
      */
-    blendDstAlpha: number;
+    blendDstAlpha: number | null;
 
     /**
      * Blending equation to use when applying blending. It's one of the constants defined in Three.js. Default is {@link AddEquation}.
@@ -2496,7 +2520,7 @@ export class Material extends EventDispatcher {
     /**
      * The tranparency of the .blendEquation. Default is null.
      */
-    blendEquationAlpha: number;
+    blendEquationAlpha: number | null;
 
     /**
      * Which blending to use when displaying objects with this material. Default is {@link NormalBlending}.
@@ -2511,7 +2535,7 @@ export class Material extends EventDispatcher {
     /**
      * The tranparency of the .blendSrc. Default is null.
      */
-    blendSrcAlpha: number;
+    blendSrcAlpha: number | null;
 
     /**
      * Changes the behavior of clipping planes so that only their intersection is clipped, rather than their union. Default is false.
@@ -2725,14 +2749,13 @@ export interface LineDashedMaterialParameters extends MaterialParameters {
     gapSize?: number;
 }
 
-export class LineDashedMaterial extends Material {
+export class LineDashedMaterial extends LineBasicMaterial {
     constructor(parameters?: LineDashedMaterialParameters);
 
-    color: Color;
-    linewidth: number;
     scale: number;
     dashSize: number;
     gapSize: number;
+    isLineDashedMaterial: boolean;
 
     setValues(parameters: LineDashedMaterialParameters): void;
 }
@@ -2764,12 +2787,12 @@ export class MeshBasicMaterial extends Material {
     constructor(parameters?: MeshBasicMaterialParameters);
 
     color: Color;
-    map: Texture;
-    aoMap: Texture;
+    map: Texture | null;
+    aoMap: Texture | null;
     aoMapIntensity: number;
-    specularMap: Texture;
-    alphaMap: Texture;
-    envMap: Texture;
+    specularMap: Texture | null;
+    alphaMap: Texture | null;
+    envMap: Texture | null;
     combine: Combine;
     reflectivity: number;
     refractionRatio: number;
@@ -2793,6 +2816,7 @@ export class MeshDepthMaterial extends Material {
 
     wireframe: boolean;
     wireframeLinewidth: number;
+    depthPacking: DepthPackingStrategies;
 
     setValues(parameters: MeshDepthMaterialParameters): void;
 }
@@ -2828,15 +2852,15 @@ export class MeshLambertMaterial extends Material {
     color: Color;
     emissive: Color;
     emissiveIntensity: number;
-    emissiveMap: Texture;
-    map: Texture;
-    lightMap: Texture;
+    emissiveMap: Texture | null;
+    map: Texture | null;
+    lightMap: Texture | null;
     lightMapIntensity: number;
-    aoMap: Texture;
+    aoMap: Texture | null;
     aoMapIntensity: number;
-    specularMap: Texture;
-    alphaMap: Texture;
-    envMap: Texture;
+    specularMap: Texture | null;
+    alphaMap: Texture | null;
+    envMap: Texture | null;
     combine: Combine;
     reflectivity: number;
     refractionRatio: number;
@@ -2890,25 +2914,25 @@ export class MeshStandardMaterial extends Material {
     color: Color;
     roughness: number;
     metalness: number;
-    map: Texture;
-    lightMap: Texture;
+    map: Texture | null;
+    lightMap: Texture | null;
     lightMapIntensity: number;
-    aoMap: Texture;
+    aoMap: Texture | null;
     aoMapIntensity: number;
     emissive: Color;
     emissiveIntensity: number;
-    emissiveMap: Texture;
-    bumpMap: Texture;
+    emissiveMap: Texture | null;
+    bumpMap: Texture | null;
     bumpScale: number;
-    normalMap: Texture;
+    normalMap: Texture | null;
     normalScale: number;
-    displacementMap: Texture;
+    displacementMap: Texture | null;
     displacementScale: number;
     displacementBias: number;
-    roughnessMap: Texture;
-    metalnessMap: Texture;
-    alphaMap: Texture;
-    envMap: Texture;
+    roughnessMap: Texture | null;
+    metalnessMap: Texture | null;
+    alphaMap: Texture | null;
+    envMap: Texture | null;
     envMapIntensity: number;
     refractionRatio: number;
     wireframe: boolean;
@@ -3063,7 +3087,7 @@ export class PointsMaterial extends Material {
     constructor(parameters?: PointsMaterialParameters);
 
     color: Color;
-    map: Texture;
+    map: Texture | null;
     size: number;
     sizeAttenuation: boolean;
 
@@ -3119,7 +3143,7 @@ export class ShaderMaterial extends Material {
     derivatives: any;
     extensions: { derivatives: boolean; fragDepth: boolean; drawBuffers: boolean; shaderTextureLOD: boolean };
     defaultAttributeValues: any;
-    index0AttributeName: string;
+    index0AttributeName: string | undefined;
 
     setValues(parameters: ShaderMaterialParameters): void;
     toJSON(meta: any): any;
@@ -3139,7 +3163,7 @@ export class SpriteMaterial extends Material {
     constructor(parameters?: SpriteMaterialParameters);
 
     color: Color;
-    map: Texture;
+    map: Texture | null;
     rotation: number;
 
     setValues(parameters: SpriteMaterialParameters): void;
@@ -3346,7 +3370,7 @@ export class Color {
      */
     getHexString(): string;
 
-    getHSL(): HSL;
+    getHSL(target: HSL): HSL;
 
     /**
      * Returns the value of this color in CSS context style.
@@ -3649,6 +3673,17 @@ export namespace Math {
     export function radToDeg(radians: number): number;
 
     export function isPowerOfTwo(value: number): boolean;
+
+	/**
+     * Returns a value linearly interpolated from two known points based
+     * on the given interval - t = 0 will return x and t = 1 will return y.
+     *
+     * @param x Start point.
+     * @param y End point.
+     * @param t interpolation factor in the closed interval [0, 1]
+     * @return {number}
+     */
+    export function lerp (x: number, y: number, t: number): number;
 
     /**
      * @deprecated Use {@link Math#floorPowerOfTwo .floorPowerOfTwo()}
@@ -5201,12 +5236,12 @@ export class LOD extends Object3D {
 export class Line extends Object3D {
     constructor(
         geometry?: Geometry | BufferGeometry,
-        material?: LineDashedMaterial | LineBasicMaterial | ShaderMaterial,
+        material?: Material | Material[],
         mode?: number
     );
 
-    geometry: Geometry|BufferGeometry;
-    material: LineBasicMaterial | LineDashedMaterial | ShaderMaterial;
+    geometry: Geometry | BufferGeometry;
+    material: Material | Material[];
 
     type: "Line";
     isLine: true;
@@ -5227,18 +5262,16 @@ export const LinePieces: number;
 export class LineSegments extends Line {
     constructor(
         geometry?: Geometry | BufferGeometry,
-        material?: LineDashedMaterial | LineBasicMaterial | ShaderMaterial | (LineDashedMaterial | LineBasicMaterial | ShaderMaterial)[],
+        material?: Material | Material[],
         mode?: number
     );
 }
 
-type MeshMaterial = MeshBasicMaterial | MeshLambertMaterial | MeshPhongMaterial | MeshDepthMaterial | MeshStandardMaterial | MeshPhysicalMaterial | MeshNormalMaterial | MeshFaceMaterial | ShaderMaterial;
-
 export class Mesh extends Object3D {
-    constructor(geometry?: Geometry | BufferGeometry, material?: MeshMaterial | MeshMaterial[]);
+    constructor(geometry?: Geometry | BufferGeometry, material?: Material | Material[]);
 
-    geometry: Geometry|BufferGeometry;
-    material: MeshMaterial | MeshMaterial[];
+    geometry: Geometry | BufferGeometry;
+    material: Material | Material[];
     drawMode: TrianglesDrawModes;
     morphTargetInfluences?: number[];
     morphTargetDictionary?: { [key: string]: number; };
@@ -5264,7 +5297,7 @@ export class Points extends Object3D {
      */
     constructor(
         geometry?: Geometry | BufferGeometry,
-        material?: PointsMaterial | ShaderMaterial
+        material?: Material | Material[]
     );
 
     type: "Points";
@@ -5278,7 +5311,7 @@ export class Points extends Object3D {
     /**
      * An instance of Material, defining the object's appearance. Default is a PointsMaterial with randomised colour.
      */
-    material: PointsMaterial | ShaderMaterial;
+    material: Material | Material[];
 
     raycast(raycaster: Raycaster, intersects: Intersection[]): void;
 }
@@ -5314,13 +5347,7 @@ export class Skeleton {
 }
 
 export class SkinnedMesh extends Mesh {
-    constructor(geometry?: Geometry|BufferGeometry, material?: MeshBasicMaterial, useVertexTexture?: boolean);
-    constructor(geometry?: Geometry|BufferGeometry, material?: MeshDepthMaterial, useVertexTexture?: boolean);
-    constructor(geometry?: Geometry|BufferGeometry, material?: MultiMaterial, useVertexTexture?: boolean);
-    constructor(geometry?: Geometry|BufferGeometry, material?: MeshLambertMaterial, useVertexTexture?: boolean);
-    constructor(geometry?: Geometry|BufferGeometry, material?: MeshNormalMaterial, useVertexTexture?: boolean);
-    constructor(geometry?: Geometry|BufferGeometry, material?: MeshPhongMaterial, useVertexTexture?: boolean);
-    constructor(geometry?: Geometry|BufferGeometry, material?: ShaderMaterial, useVertexTexture?: boolean);
+    constructor(geometry?: Geometry | BufferGeometry, material?: Material | Material[], useVertexTexture?: boolean);
 
     bindMode: string;
     bindMatrix: Matrix4;
@@ -5339,7 +5366,7 @@ export class Sprite extends Object3D {
     type: "Sprite";
     isSprite: true;
 
-    material: SpriteMaterial;
+    material: Material;
     center: Vector2;
 
     raycast(raycaster: Raycaster, intersects: Intersection[]): void;
@@ -5366,6 +5393,14 @@ export interface WebGLRendererParameters {
      * A Canvas where the renderer draws its output.
      */
     canvas?: HTMLCanvasElement;
+
+
+    /**
+     * A WebGL Rendering Context.
+     * (https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext)
+     *  Default is null
+     */
+    context?: WebGLRenderingContext
 
     /**
      *  shader precision. Can be "highp", "mediump" or "lowp".
@@ -5533,6 +5568,9 @@ export class WebGLRenderer implements Renderer {
     getPixelRatio(): number;
     setPixelRatio(value: number): void;
 
+    getDrawingBufferSize(): { width: number; height: number; };
+    setDrawingBufferSize(width: number, height: number, pixelRatio: number): void;
+
     getSize(): { width: number; height: number; };
 
     /**
@@ -5540,6 +5578,7 @@ export class WebGLRenderer implements Renderer {
      */
     setSize(width: number, height: number, updateStyle?: boolean): void;
 
+    getCurrentViewport(): Vector4;
     /**
      * Sets the viewport to render from (x, y) to (x + width, y + height).
      */
@@ -5604,6 +5643,11 @@ export class WebGLRenderer implements Renderer {
     /**
      * A build in function that can be used instead of requestAnimationFrame. For WebVR projects this function must be used.
      * @param callback The function will be called every available frame. If `null` is passed it will stop any already ongoing animation.
+     */
+    setAnimationLoop(callback: Function): void;
+
+    /**
+     * @deprecated Use {@link WebGLRenderer#setAnimationLoop .setAnimationLoop()} instead.
      */
     animate(callback: Function): void;
 
@@ -5738,6 +5782,7 @@ export interface WebGLRenderTargetOptions {
     anisotropy?: number; // 1;
     depthBuffer?: boolean; // true;
     stencilBuffer?: boolean; // true;
+    generateMipmaps?: boolean; // true;
 }
 
 export class WebGLRenderTarget extends EventDispatcher {
@@ -7039,7 +7084,7 @@ export class SplineCurve extends Curve<Vector2> {
 
 // Extras / Geometries /////////////////////////////////////////////////////////////////////
 export class BoxBufferGeometry extends BufferGeometry {
-    constructor(width: number, height: number, depth: number, widthSegments?: number, heightSegments?: number, depthSegments?: number);
+    constructor(width?: number, height?: number, depth?: number, widthSegments?: number, heightSegments?: number, depthSegments?: number);
 
     parameters: {
         width: number;
@@ -7063,7 +7108,7 @@ export class BoxGeometry extends Geometry {
      * @param heightSegments — Number of segmented faces along the height of the sides.
      * @param depthSegments — Number of segmented faces along the depth of the sides.
      */
-    constructor(width: number, height: number, depth: number, widthSegments?: number, heightSegments?: number, depthSegments?: number);
+    constructor(width?: number, height?: number, depth?: number, widthSegments?: number, heightSegments?: number, depthSegments?: number);
 
     parameters: {
         width: number;
@@ -7162,29 +7207,39 @@ export class DodecahedronGeometry extends Geometry {
 }
 
 export class EdgesGeometry extends BufferGeometry {
-    constructor(geometry: BufferGeometry | Geometry, thresholdAngle: number);
+    constructor(geometry: BufferGeometry | Geometry, thresholdAngle?: number);
+}
+
+export interface ExtrudeGeometryOptions {
+    curveSegments?: number;
+    steps?: number;
+    depth?: number;
+    bevelEnabled?: boolean;
+    bevelThickness?: number;
+    bevelSize?: number;
+    bevelSegments?: number;
+    extrudePath?: CurvePath<Vector3>;
+    UVGenerator?: UVGenerator;
+}
+
+export interface UVGenerator {
+  generateTopUV(geometry: ExtrudeBufferGeometry, vertices: number[], indexA: number, indexB: number, indexC: number): Vector2[];
+  generateSideWallUV(geometry: ExtrudeBufferGeometry, vertices: number[], indexA: number, indexB: number, indexC: number, indexD: number): Vector2[];
 }
 
 export class ExtrudeGeometry extends Geometry {
-    constructor(shape?: Shape, options?: any);
-    constructor(shapes?: Shape[], options?: any);
+    constructor(shapes: Shape | Shape[], options?: ExtrudeGeometryOptions);
 
-    static WorldUVGenerator: {
-        generateTopUV(geometry: Geometry, vertex: number[], indexA: number, indexB: number, indexC: number): Vector2[];
-        generateSideWallUV(geometry: Geometry, vertex: number[], indexA: number, indexB: number, indexC: number, indexD: number): Vector2[];
-    };
+    static WorldUVGenerator: UVGenerator;
 
     addShapeList(shapes: Shape[], options?: any): void;
     addShape(shape: Shape, options?: any): void;
 }
 
 export class ExtrudeBufferGeometry extends BufferGeometry {
-    constructor(shapes?: Shape[], options?: any);
+    constructor(shapes: Shape | Shape[], options?: ExtrudeGeometryOptions);
 
-    static WorldUVGenerator: {
-        generateTopUV(geometry: Geometry, vertices: number[], indexA: number, indexB: number, indexC: number): Vector2[];
-        generateSideWallUV(geometry: Geometry, vertices: number[], indexA: number, indexB: number, indexC: number, indexD: number): Vector2[];
-    };
+    static WorldUVGenerator: UVGenerator;
 
     addShapeList(shapes: Shape[], options?: any): void;
     addShape(shape: Shape, options?: any): void;
@@ -7228,8 +7283,18 @@ export class OctahedronGeometry extends PolyhedronGeometry {
     constructor(radius?: number, detail?: number);
 }
 
+export class ParametricBufferGeometry extends BufferGeometry {
+  constructor(func: (u: number, v: number, dest: Vector3) => void, slices: number, stacks: number);
+
+  parameters: {
+    func: (u: number, v: number, dest:Vector3) => void;
+    slices: number;
+    stacks: number;
+  };
+}
+
 export class ParametricGeometry extends Geometry {
-    constructor(func: (u: number, v: number, dest:Vector3) => void, slices: number, stacks: number);
+    constructor(func: (u: number, v: number, dest: Vector3) => void, slices: number, stacks: number);
 
     parameters: {
         func: (u: number, v: number, dest:Vector3) => void;
@@ -7239,7 +7304,7 @@ export class ParametricGeometry extends Geometry {
 }
 
 export class PlaneBufferGeometry extends BufferGeometry {
-    constructor(width: number, height: number, widthSegments?: number, heightSegments?: number);
+    constructor(width?: number, height?: number, widthSegments?: number, heightSegments?: number);
 
     parameters: {
         width: number;
@@ -7250,7 +7315,7 @@ export class PlaneBufferGeometry extends BufferGeometry {
 }
 
 export class PlaneGeometry extends Geometry {
-    constructor(width: number, height: number, widthSegments?: number, heightSegments?: number);
+    constructor(width?: number, height?: number, widthSegments?: number, heightSegments?: number);
 
     parameters: {
         width: number;
@@ -7261,7 +7326,7 @@ export class PlaneGeometry extends Geometry {
 }
 
 export class PolyhedronBufferGeometry extends BufferGeometry {
-	constructor(vertices: number[], indices: number[], radius: number, detail: number);
+	constructor(vertices: number[], indices: number[], radius?: number, detail?: number);
 
 	parameters: {
 		vertices: number[];
@@ -7310,8 +7375,7 @@ export class RingGeometry extends Geometry {
 }
 
 export class ShapeGeometry extends Geometry {
-    constructor(shape: Shape, options?: any);
-    constructor(shapes: Shape[], options?: any);
+    constructor(shapes: Shape | Shape[], curveSegments?: number);
 
     addShapeList(shapes: Shape[], options: any): ShapeGeometry;
     addShape(shape: Shape, options?: any): void;
@@ -7323,7 +7387,7 @@ export class ShapeBufferGeometry extends BufferGeometry
 }
 
 export class SphereBufferGeometry extends BufferGeometry {
-    constructor(radius: number, widthSegments?: number, heightSegments?: number, phiStart?: number, phiLength?: number, thetaStart?: number, thetaLength?: number);
+    constructor(radius?: number, widthSegments?: number, heightSegments?: number, phiStart?: number, phiLength?: number, thetaStart?: number, thetaLength?: number);
 
     parameters: {
         radius: number;
@@ -7351,7 +7415,7 @@ export class SphereGeometry extends Geometry {
      * @param thetaStart — specify vertical starting angle. Default is 0.
      * @param thetaLength — specify vertical sweep angle size. Default is Math.PI.
      */
-    constructor(radius: number, widthSegments?: number, heightSegments?: number, phiStart?: number, phiLength?: number, thetaStart?: number, thetaLength?: number);
+    constructor(radius?: number, widthSegments?: number, heightSegments?: number, phiStart?: number, phiLength?: number, thetaStart?: number, thetaLength?: number);
 
     parameters: {
         radius: number;
@@ -7438,13 +7502,13 @@ export class TorusGeometry extends Geometry {
 }
 
 export class TorusKnotBufferGeometry extends BufferGeometry {
-    constructor(radius?: number, tube?: number, radialSegments?: number, tubularSegments?: number, p?: number, q?: number, heightScale?: number);
+    constructor(radius?: number, tube?: number, tubularSegments?: number, radialSegments?: number, p?: number, q?: number);
 
     parameters: {
         radius: number;
         tube: number;
-        radialSegments: number;
         tubularSegments: number;
+        radialSegments: number;
         p: number;
         q: number;
         heightScale: number;
@@ -7452,13 +7516,13 @@ export class TorusKnotBufferGeometry extends BufferGeometry {
 }
 
 export class TorusKnotGeometry extends Geometry {
-    constructor(radius?: number, tube?: number, radialSegments?: number, tubularSegments?: number, p?: number, q?: number, heightScale?: number);
+    constructor(radius?: number, tube?: number, tubularSegments?: number, radialSegments?: number, p?: number, q?: number);
 
     parameters: {
         radius: number;
         tube: number;
-        radialSegments: number;
         tubularSegments: number;
+        radialSegments: number;
         p: number;
         q: number;
         heightScale: number;
@@ -7466,31 +7530,26 @@ export class TorusKnotGeometry extends Geometry {
 }
 
 export class TubeGeometry extends Geometry {
-    constructor(path: Curve<Vector3>, segments?: number, radius?: number, radiusSegments?: number, closed?: boolean, taper?: (u: number) => number);
+    constructor(path: Curve<Vector3>, tubularSegments?: number, radius?: number, radiusSegments?: number, closed?: boolean);
 
     parameters: {
         path: Curve<Vector3>;
-        segments: number;
+        tubularSegments: number;
         radius: number;
         radialSegments: number;
         closed: boolean;
-        taper: (u: number) => number; // NoTaper or SinusoidalTaper;
     };
     tangents: Vector3[];
     normals: Vector3[];
     binormals: Vector3[];
-
-    static NoTaper(u?: number): number;
-    static SinusoidalTaper(u: number): number;
-    static FrenetFrames(path: Path, segments: number, closed: boolean): void;
 }
 
 export class TubeBufferGeometry extends BufferGeometry {
-    constructor(path: Curve<Vector3>, segments?: number, radius?: number, radiusSegments?: number, closed?: boolean);
+    constructor(path: Curve<Vector3>, tubularSegments?: number, radius?: number, radiusSegments?: number, closed?: boolean);
 
     parameters: {
         path: Curve<Vector3>;
-        segments: number;
+        tubularSegments: number;
         radius: number;
         radialSegments: number;
         closed: boolean;
