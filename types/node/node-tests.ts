@@ -17,6 +17,7 @@ import * as path from "path";
 import * as readline from "readline";
 import * as childProcess from "child_process";
 import * as cluster from "cluster";
+import * as workerThreads from "worker_threads";
 import * as os from "os";
 import * as vm from "vm";
 import * as console2 from "console";
@@ -30,6 +31,7 @@ import * as async_hooks from "async_hooks";
 import * as http2 from "http2";
 import * as inspector from "inspector";
 import * as perf_hooks from "perf_hooks";
+import * as trace_events from "trace_events";
 import Module = require("module");
 
 // Specifically test buffer module regression.
@@ -1513,7 +1515,7 @@ async function asyncStreamPipelineFinished() {
                 type: 'pkcs1',
             },
             privateKeyEncoding: {
-                ciper: 'some-cipher',
+                cipher: 'some-cipher',
                 format: 'pem',
                 passphrase: 'secret',
                 type: 'pkcs8',
@@ -1531,7 +1533,7 @@ async function asyncStreamPipelineFinished() {
                 type: 'spki',
             },
             privateKeyEncoding: {
-                ciper: 'some-cipher',
+                cipher: 'some-cipher',
                 format: 'der',
                 passphrase: 'secret',
                 type: 'pkcs8',
@@ -1548,7 +1550,108 @@ async function asyncStreamPipelineFinished() {
                 type: 'pkcs1',
             },
             privateKeyEncoding: {
-                ciper: 'some-cipher',
+                cipher: 'some-cipher',
+                format: 'pem',
+                passphrase: 'secret',
+                type: 'pkcs8',
+            },
+        });
+    }
+
+    {
+        crypto.generateKeyPair('rsa', {
+            modulusLength: 123,
+            publicKeyEncoding: {
+                format: 'der',
+                type: 'pkcs1',
+            },
+            privateKeyEncoding: {
+                cipher: 'some-cipher',
+                format: 'pem',
+                passphrase: 'secret',
+                type: 'pkcs8',
+            },
+        }, (err: NodeJS.ErrnoException | null, publicKey: Buffer, privateKey: string) => {});
+
+        crypto.generateKeyPair('dsa', {
+            modulusLength: 123,
+            divisorLength: 123,
+            publicKeyEncoding: {
+                format: 'pem',
+                type: 'spki',
+            },
+            privateKeyEncoding: {
+                cipher: 'some-cipher',
+                format: 'der',
+                passphrase: 'secret',
+                type: 'pkcs8',
+            },
+        }, (err: NodeJS.ErrnoException | null, publicKey: string, privateKey: Buffer) => {});
+
+        crypto.generateKeyPair('ec', {
+            namedCurve: 'curve',
+            publicKeyEncoding: {
+                format: 'pem',
+                type: 'pkcs1',
+            },
+            privateKeyEncoding: {
+                cipher: 'some-cipher',
+                format: 'pem',
+                passphrase: 'secret',
+                type: 'pkcs8',
+            },
+        }, (err: NodeJS.ErrnoException | null, publicKey: string, privateKey: string) => {});
+    }
+
+    {
+        const generateKeyPairPromisified = util.promisify(crypto.generateKeyPair);
+
+        const rsaRes: Promise<{
+            publicKey: Buffer;
+            privateKey: string;
+        }> = generateKeyPairPromisified('rsa', {
+            modulusLength: 123,
+            publicKeyEncoding: {
+                format: 'der',
+                type: 'pkcs1',
+            },
+            privateKeyEncoding: {
+                cipher: 'some-cipher',
+                format: 'pem',
+                passphrase: 'secret',
+                type: 'pkcs8',
+            },
+        });
+
+        const dsaRes: Promise<{
+            publicKey: string;
+            privateKey: Buffer;
+        }> = generateKeyPairPromisified('dsa', {
+            modulusLength: 123,
+            divisorLength: 123,
+            publicKeyEncoding: {
+                format: 'pem',
+                type: 'spki',
+            },
+            privateKeyEncoding: {
+                cipher: 'some-cipher',
+                format: 'der',
+                passphrase: 'secret',
+                type: 'pkcs8',
+            },
+        });
+
+        const ecRes: Promise<{
+            publicKey: string;
+            privateKey: string;
+        }> = generateKeyPairPromisified('ec', {
+            namedCurve: 'curve',
+            publicKeyEncoding: {
+                format: 'pem',
+                type: 'pkcs1',
+            },
+            privateKeyEncoding: {
+                cipher: 'some-cipher',
                 format: 'pem',
                 passphrase: 'secret',
                 type: 'pkcs8',
@@ -1837,6 +1940,7 @@ async function asyncStreamPipelineFinished() {
         let req: http.ClientRequest = new http.ClientRequest("https://www.google.com");
         req = new http.ClientRequest(new url.URL("https://www.google.com"));
         req = new http.ClientRequest({ path: 'http://0.0.0.0' });
+        req = new http.ClientRequest({ setHost: false });
 
         // header
         req.setHeader('Content-Type', 'text/plain');
@@ -2535,6 +2639,8 @@ async function asyncStreamPipelineFinished() {
     {
         childProcess.exec("echo test");
         childProcess.exec("echo test", { windowsHide: true });
+        childProcess.spawn("echo");
+        childProcess.spawn("echo", { windowsHide: true });
         childProcess.spawn("echo", ["test"], { windowsHide: true });
         childProcess.spawn("echo", ["test"], { windowsHide: true, argv0: "echo-test" });
         childProcess.spawn("echo", ["test"], { stdio: [0xdeadbeef, "inherit", undefined, "pipe"] });
@@ -2826,6 +2932,56 @@ async function asyncStreamPipelineFinished() {
                 console.log('worker %d is dead', worker.process.pid);
             }
         });
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+/// worker_threads tests: https://nodejs.org/api/worker_threads.html ///
+//////////////////////////////////////////////////////////////////////
+
+{
+    {
+        if (workerThreads.isMainThread) {
+            module.exports = async function parseJSAsync(script: string) {
+                return new Promise((resolve, reject) => {
+                    const worker = new workerThreads.Worker(__filename, {
+                        workerData: script
+                    });
+                    worker.on('message', resolve);
+                    worker.on('error', reject);
+                    worker.on('exit', (code) => {
+                        if (code !== 0)
+                            reject(new Error(`Worker stopped with exit code ${code}`));
+                    });
+                });
+            };
+        } else {
+            const script = workerThreads.workerData;
+            workerThreads.parentPort.postMessage(script);
+        }
+    }
+
+    {
+        const { port1, port2 } = new workerThreads.MessageChannel();
+        port1.on('message', (message) => console.log('received', message));
+        port2.postMessage({ foo: 'bar' });
+    }
+
+    {
+        if (workerThreads.isMainThread) {
+            const worker = new workerThreads.Worker(__filename);
+            const subChannel = new workerThreads.MessageChannel();
+            worker.postMessage({ hereIsYourPort: subChannel.port1 }, [subChannel.port1]);
+            subChannel.port2.on('message', (value) => {
+                console.log('received:', value);
+            });
+        } else {
+            workerThreads.parentPort.once('message', (value) => {
+                assert(value.hereIsYourPort instanceof MessagePort);
+                value.hereIsYourPort.postMessage('the worker is sending this');
+                value.hereIsYourPort.close();
+            });
+        }
     }
 }
 
@@ -3196,7 +3352,82 @@ import * as p from "process";
     }
     {
         const writeStream = fs.createWriteStream('./index.d.ts');
-        const consoleInstance = new console.Console(writeStream);
+        let consoleInstance: Console = new console.Console(writeStream);
+
+        consoleInstance = new console.Console(writeStream, writeStream);
+        consoleInstance = new console.Console(writeStream, writeStream, true);
+        consoleInstance = new console.Console({
+            stdout: writeStream,
+            stderr: writeStream,
+            colorMode: 'auto',
+            ignoreErrors: true
+        });
+        consoleInstance = new console.Console({
+            stdout: writeStream,
+            colorMode: false
+        });
+        consoleInstance = new console.Console({
+            stdout: writeStream
+        });
+    }
+    {
+        console.assert('value');
+        console.assert('value', 'message');
+        console.assert('value', 'message', 'foo', 'bar');
+        console.clear();
+        console.count();
+        console.count('label');
+        console.countReset();
+        console.countReset('label');
+        console.debug();
+        console.debug('message');
+        console.debug('message', 'foo', 'bar');
+        console.dir('obj');
+        console.dir('obj', { depth: 1 });
+        console.error();
+        console.error('message');
+        console.error('message', 'foo', 'bar');
+        console.group();
+        console.group('label');
+        console.group('label1', 'label2');
+        console.groupCollapsed();
+        console.groupEnd();
+        console.info();
+        console.info('message');
+        console.info('message', 'foo', 'bar');
+        console.log();
+        console.log('message');
+        console.log('message', 'foo', 'bar');
+        console.table({ foo: 'bar' });
+        console.table([{ foo: 'bar' }]);
+        console.table([{ foo: 'bar' }], ['foo']);
+        console.time();
+        console.time('label');
+        console.timeEnd();
+        console.timeEnd('label');
+        console.timeLog();
+        console.timeLog('label');
+        console.timeLog('label', 'foo', 'bar');
+        console.trace();
+        console.trace('message');
+        console.trace('message', 'foo', 'bar');
+        console.warn();
+        console.warn('message');
+        console.warn('message', 'foo', 'bar');
+
+        // --- Inspector mode only ---
+        console.markTimeline();
+        console.markTimeline('label');
+        console.profile();
+        console.profile('label');
+        console.profileEnd();
+        console.profileEnd('label');
+        console.timeStamp();
+        console.timeStamp('label');
+        console.timeline();
+        console.timeline('label');
+        console.timelineEnd();
+        console.timelineEnd('label');
     }
 }
 
@@ -3501,7 +3732,7 @@ import * as p from "process";
     {
         let _server: repl.REPLServer;
         let _boolean: boolean;
-        const _ctx: any = 1;
+        const _ctx: vm.Context = {};
 
         _server = _server.addListener("exit", () => { });
         _server = _server.addListener("reset", () => { });
@@ -3524,9 +3755,46 @@ import * as p from "process";
         _server.outputStream.write("test");
         const line = _server.inputStream.read();
 
+        _server.clearBufferedCommand();
+        _server.displayPrompt();
+        _server.displayPrompt(true);
+        _server.defineCommand("cmd", function(text) {
+            // $ExpectType string
+            text;
+            // $ExpectType REPLServer
+            this;
+        });
+        _server.defineCommand("cmd", {
+            help: "",
+            action(text) {
+                // $ExpectType string
+                text;
+                // $ExpectType REPLServer
+                this;
+            }
+        });
+
+        repl.start({
+            eval() {
+                // $ExpectType REPLServer
+                this;
+            },
+            writer() {
+                // $ExpectType REPLServer
+                this;
+                return "";
+            }
+        });
+
         function test() {
             throw new repl.Recoverable(new Error("test"));
         }
+
+        _server.context['key0'] = 1;
+        _server.context['key1'] = "";
+        _server.context['key2'] = true;
+        _server.context['key3'] = [];
+        _server.context['key4'] = {};
     }
 }
 
@@ -4019,6 +4287,7 @@ import * as constants from 'constants';
         http2Stream.on('streamClosed', (code: number) => {});
         http2Stream.on('timeout', () => {});
         http2Stream.on('trailers', (trailers: http2.IncomingHttpHeaders, flags: number) => {});
+        http2Stream.on('wantTrailers', () => {});
 
         const aborted: boolean = http2Stream.aborted;
         const closed: boolean = http2Stream.closed;
@@ -4070,7 +4339,7 @@ import * as constants from 'constants';
 
         const options: http2.ServerStreamResponseOptions = {
             endStream: true,
-            getTrailers: (trailers: http2.OutgoingHttpHeaders) => {}
+            waitForTrailers: true,
         };
         serverHttp2Stream.respond();
         serverHttp2Stream.respond(headers);
@@ -4516,7 +4785,24 @@ import * as constants from 'constants';
             const pauseReason: string = message.params.reason;
         });
         session.on('Debugger.resumed', () => {});
+        // Node Inspector events
+        session.on('NodeTracing.dataCollected', (message: inspector.InspectorNotification<inspector.NodeTracing.DataCollectedEventDataType>) => {
+          const value: Array<{}> = message.params.value;
+        });
     }
+}
+
+///////////////////////////////////////////////////////////
+/// Trace Events Tests                                  ///
+///////////////////////////////////////////////////////////
+
+{
+    const enabledCategories: string = trace_events.getEnabledCategories();
+    const tracing: trace_events.Tracing = trace_events.createTracing({ categories: ['node', 'v8'] });
+    const categories: string = tracing.categories;
+    const enabled: boolean = tracing.enabled;
+    tracing.enable();
+    tracing.disable();
 }
 
 ////////////////////////////////////////////////////

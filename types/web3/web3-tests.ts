@@ -2,6 +2,8 @@ import Web3 = require("web3");
 import BigNumber = require("bn.js");
 import { TransactionReceipt } from "web3/types";
 import PromiEvent from "web3/promiEvent";
+import { NEW_ABI_STANDARD, OLD_ABI_STANDARD } from "web3/test/abi-tests";
+import { Provider, JsonRPCResponse } from "web3/providers";
 
 const contractAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
 
@@ -10,6 +12,25 @@ const contractAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
 // --------------------------------------------------------------------------
 const web3 = new Web3();
 const myProvider = new web3.providers.HttpProvider("http://localhost:5454");
+
+const createFailingHttpProvider = (): Provider => ({
+  send(payload, callback) {
+    callback(new Error("Illegal!"));
+  }
+});
+
+const createSuccesfulHttpProvider = (): Provider => ({
+  send(payload, callback) {
+    const response = {};
+    callback(null, response as JsonRPCResponse);
+  }
+});
+
+const fakeProvider: Provider = createFailingHttpProvider();
+const otherFakeProvider: Provider = createSuccesfulHttpProvider();
+
+web3.setProvider(fakeProvider);
+web3.setProvider(otherFakeProvider);
 web3.setProvider(myProvider);
 web3.eth.setProvider(myProvider);
 
@@ -28,7 +49,9 @@ const sendSignedTransactionTxReceipt0: PromiEvent<TransactionReceipt> = web3.eth
 const sendSignedTransactionTxReceipt1: PromiEvent<TransactionReceipt> = web3.eth.sendSignedTransaction("")
     .on("transactionHash", (txHash: string) => { });
 const sendSignedTransactionTxReceipt2: PromiEvent<TransactionReceipt> = web3.eth.sendSignedTransaction("")
-    .on("receipt", (txReceipt: TransactionReceipt) => { });
+    .on("receipt", (txReceipt: TransactionReceipt) => {
+        const { status }: { status: boolean }  = txReceipt;
+    });
 const sendSignedTransactionTxReceipt3: PromiEvent<TransactionReceipt> = web3.eth.sendSignedTransaction("")
     .on("confirmation", (confNumber: number, receipt: TransactionReceipt) => { });
 const sendSignedTransactionTxReceipt4: PromiEvent<TransactionReceipt> = web3.eth.sendSignedTransaction("")
@@ -123,6 +146,8 @@ web3.eth.personal.unlockAccount(
 //
 // web3.eth.abi
 // --------------------------------------------------------------------------
+const myContractOldAbi = new web3.eth.Contract(OLD_ABI_STANDARD);
+const myContractNewAbi = new web3.eth.Contract(NEW_ABI_STANDARD);
 
 //
 // web3.bzz

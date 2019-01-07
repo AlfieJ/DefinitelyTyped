@@ -7,6 +7,7 @@
 //                 Alberto Restifo <https://github.com/albertorestifo>
 //                 Behind The Math <https://github.com/BehindTheMath>
 //                 3af <https://github.com/3af>
+//                 Janne Liuhtonen <https://github.com/jliuhtonen>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // TypeScript Version: 2.2
 
@@ -23,7 +24,7 @@ export function parse(file: File, config?: ParseConfig): ParseResult;
 
 export function parse(stream: NodeJS.ReadableStream, config?: ParseConfig): ParseResult;
 
-export function parse(stream: typeof NODE_STREAM_INPUT, config?: ParseConfig): NodeJS.ReadableStream;
+export function parse(stream: typeof NODE_STREAM_INPUT, config?: ParseConfig): NodeJS.ReadWriteStream;
 
 /**
  * Unparses javascript data objects and returns a csv string
@@ -102,7 +103,7 @@ export interface ParseConfig {
     worker?: boolean;              // default: false
     comments?: boolean | string;   // default: false
     download?: boolean;            // default: false
-    skipEmptyLines?: boolean;      // default: false
+    skipEmptyLines?: boolean | 'greedy';      // default: false
     fastMode?: boolean;            // default: undefined
     withCredentials?: boolean;     // default: undefined
 

@@ -104,7 +104,7 @@ export function warn(...values: any[]): void;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Data Object Interfaces - These intrface are not specific part of fabric,
-// They are just helpful for for defining function paramters
+// They are just helpful for for defining function parameters
 //////////////////////////////////////////////////////////////////////////////
 interface IDataURLOptions {
 	/**
@@ -140,6 +140,7 @@ interface IDataURLOptions {
 interface IEvent {
 	e: Event;
 	target?: Object;
+    transform?: { corner: string };
 }
 
 interface IFillOptions {
@@ -3466,7 +3467,7 @@ export class IText extends Object {
 	 * @param [endIndex] End index to get styles at
 	 * @return styles Style object at a specified (or current) index
 	 */
-	getSelectionStyles(startIndex: number, endIndex: number): any;
+	getSelectionStyles(startIndex: number, endIndex: number, complete?: boolean): any;
 	/**
 	 * Sets style of a current selection
 	 * @param [styles] Styles object
@@ -4528,7 +4529,7 @@ interface IUtilMisc {
 	 * @param [context] Context to invoke callback in
 	 * @param [crossOrigin] crossOrigin value to set image element to
 	 */
-	loadImage(url: string, callback: (image: HTMLImageElement) => void, context?: any, crossOrigin?: boolean): void;
+	loadImage(url: string, callback: (image: HTMLImageElement) => void, context?: any, crossOrigin?: string): void;
 
 	/**
 	 * Creates corresponding fabric instances from their object representations
@@ -4682,4 +4683,3 @@ export interface WebglFilterBackend extends FilterBackend, WebglFilterBackendOpt
 export class WebglFilterBackend {
 	constructor(options?: WebglFilterBackendOptions);
 }
-

@@ -75,6 +75,7 @@ import {
   UncontrolledDropdown,
   UncontrolledTooltip,
   UncontrolledCollapse,
+  UncontrolledCarousel,
   TabContent,
   Table,
   Tag,
@@ -281,7 +282,10 @@ const Example13 = (
 interface CustomButtonProps extends ButtonProps {
   customProp: string;
 }
-const CustomButton: React.SFC<CustomButtonProps> = props => <Button {...props} />;
+// NOTE: not adding the <{}> causes the generic parameter to be a spread type of CustomButtonProps,
+// for some reason this causes children to be inferred as being 'ReactNode & {}' which makes the spread
+// invalid. TS3.2 bug?
+const CustomButton: React.SFC<CustomButtonProps> = props => <Button<{}> {...props}/>;
 
 class Example14 extends React.Component<any, any> {
   state: any;
@@ -3751,7 +3755,7 @@ function Example117() {
 }
 
 function Example118() {
-    const ref: string | ((e: any) => void) | React.RefObject<any> = null as any;
+    const ref: React.Ref<any> = React.createRef();
 
     <Button innerRef={ref}/>;
     <CardLink innerRef={ref}/>;
@@ -4292,5 +4296,30 @@ function Example123() {
         </Card>
       </UncontrolledCollapse>
     </div>
+  );
+}
+
+function Example124()  {
+  // https://reactstrap.github.io/components/carousel/
+  const items = [
+    {
+      src: 'data:image/svg+xml...',
+      altText: 'Slide 1',
+      caption: 'Slide 1'
+    },
+    {
+      src: 'data:image/svg+xml...',
+      altText: 'Slide 2',
+      caption: 'Slide 2'
+    },
+    {
+      src: 'data:image/svg+xml...',
+      altText: 'Slide 3',
+      caption: 'Slide 3'
+    }
+  ];
+
+  return (
+    <UncontrolledCarousel items={items} />
   );
 }

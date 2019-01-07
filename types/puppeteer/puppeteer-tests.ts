@@ -1,5 +1,19 @@
 import * as puppeteer from "puppeteer";
 import { TimeoutError } from "puppeteer/Errors";
+import * as Devices from "puppeteer/DeviceDescriptors";
+
+// Accessibility
+
+(async () => {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  const snap = await page.accessibility.snapshot({
+    interestingOnly: true,
+  });
+  for (const child of snap.children) {
+    console.log(child.name);
+  }
+});
 
 // Basic nagivation
 (async () => {
@@ -105,6 +119,7 @@ puppeteer.launch().then(async browser => {
   });
 
   await page.emulateMedia("screen");
+  await page.emulate(Devices['test']);
   await page.pdf({ path: "page.pdf" });
 
   await page.setRequestInterception(true);
@@ -185,6 +200,13 @@ puppeteer.launch().then(async browser => {
   await page.screenshot({ path: "example.png" });
 
   browser.close();
+})();
+
+// Launching with default viewport disabled
+(async () => {
+  await puppeteer.launch({
+    defaultViewport: null
+  });
 })();
 
 // Test v0.12 features

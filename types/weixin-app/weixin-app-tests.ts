@@ -2,11 +2,11 @@ getCurrentPages();
 
 interface MyOwnEvent
 	extends wx.CustomEvent<
-			"my-own",
-			{
-				hello: string;
-			}
-		> {}
+		"my-own",
+		{
+			hello: string;
+		}
+	> {}
 
 let behavior = Behavior({
 	behaviors: [],
@@ -467,5 +467,27 @@ wx.getSystemInfo({
 			fontSizeSetting,
 			system
 		} = res;
+	}
+});
+
+function testAccountInfo(): string {
+	const accountInfo: wx.AccountInfo = wx.getAccountInfoSync();
+	return accountInfo.miniProgram.appId;
+}
+
+wx.reportAnalytics("test-event", { a: 1, b: "2" });
+
+App({
+	onLaunch() {
+		const manager: wx.UpdateManager = wx.getUpdateManager();
+		manager.onCheckForUpdate(({ hasUpdate }) => {
+			console.info({ hasUpdate });
+		});
+		manager.onUpdateReady(() => {
+			manager.applyUpdate();
+		});
+		manager.onUpdateFailed(({ errMsg }) => {
+			console.warn("update failed", errMsg);
+		});
 	}
 });

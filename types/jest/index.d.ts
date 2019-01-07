@@ -39,11 +39,15 @@ interface NodeRequire {
     /**
      * Returns the actual module instead of a mock, bypassing all checks on
      * whether the module should receive a mock implementation or not.
+     *
+     * @deprecated Use `jest.requireActual` instead.
      */
     requireActual(moduleName: string): any;
     /**
      * Returns a mock module instead of the actual module, bypassing all checks
      * on whether the module should be required normally or not.
+     *
+     * @deprecated Use `jest.requireMock`instead.
      */
     requireMock(moduleName: string): any;
 }
@@ -127,6 +131,16 @@ declare namespace jest {
      * Mocks a module with an auto-mocked version when it is being required.
      */
     function mock(moduleName: string, factory?: any, options?: MockOptions): typeof jest;
+    /**
+     * Returns the actual module instead of a mock, bypassing all checks on
+     * whether the module should receive a mock implementation or not.
+     */
+    function requireActual(moduleName: string): any;
+    /**
+     * Returns a mock module instead of the actual module, bypassing all checks
+     * on whether the module should be required normally or not.
+     */
+    function requireMock(moduleName: string): any;
     /**
      * Resets the module registry - the cache of all required modules. This is
      * useful to isolate modules where local state might conflict between tests.
@@ -251,7 +265,7 @@ declare namespace jest {
          * @param fn The function for your test
          * @param timeout The timeout for an async function test
          */
-        (name: string, fn: ProvidesCallback, timeout?: number): void;
+        (name: string, fn?: ProvidesCallback, timeout?: number): void;
         /**
          * Only runs this test in the current file.
          */
@@ -345,7 +359,14 @@ declare namespace jest {
     }
 
     interface ExpectExtendMap {
-        [key: string]: (this: MatcherUtils, received: any, ...actual: any[]) => { message(): string | (() => string), pass: boolean } | Promise<{ message(): string, pass: boolean }>;
+        [key: string]: CustomMatcher;
+    }
+
+    type CustomMatcher = (this: MatcherUtils, received: any, ...actual: any[]) => CustomMatcherResult | Promise<CustomMatcherResult>;
+
+    interface CustomMatcherResult {
+        pass: boolean;
+        message: string | (() => string);
     }
 
     interface SnapshotSerializerOptions {
@@ -384,6 +405,36 @@ declare namespace jest {
     interface SnapshotSerializerPlugin {
         print(val: any, serialize: ((val: any) => string), indent: ((str: string) => string), opts: SnapshotSerializerOptions, colors: SnapshotSerializerColors): string;
         test(val: any): boolean;
+    }
+
+    interface InverseAsymmetricMatchers {
+        /**
+         * `expect.not.arrayContaining(array)` matches a received array which
+         * does not contain all of the elements in the expected array. That is,
+         * the expected array is not a subset of the received array. It is the
+         * inverse of `expect.arrayContaining`.
+         */
+        arrayContaining(arr: any[]): any;
+        /**
+         * `expect.not.objectContaining(object)` matches any received object
+         * that does not recursively match the expected properties. That is, the
+         * expected object is not a subset of the received object. Therefore,
+         * it matches a received object which contains properties that are not
+         * in the expected object. It is the inverse of `expect.objectContaining`.
+         */
+        objectContaining(obj: {}): any;
+        /**
+         * `expect.not.stringMatching(string | regexp)` matches the received
+         * string that does not match the expected regexp. It is the inverse of
+         * `expect.stringMatching`.
+         */
+        stringMatching(str: string | RegExp): any;
+        /**
+         * `expect.not.stringContaining(string)` matches the received string
+         * that does not contain the exact expected string. It is the inverse of
+         * `expect.stringContaining`.
+         */
+        stringContaining(str: string): any;
     }
 
     /**
@@ -468,6 +519,8 @@ declare namespace jest {
          * Matches any received string that contains the exact expected string
          */
         stringContaining(str: string): any;
+
+        not: InverseAsymmetricMatchers;
     }
 
     interface Matchers<R> {
@@ -942,7 +995,7 @@ declare function pending(reason?: string): void;
 /**
  * Fails a test when called within one.
  */
-declare function fail(error?: any): void;
+declare function fail(error?: any): never;
 declare namespace jasmine {
     let DEFAULT_TIMEOUT_INTERVAL: number;
     function clock(): Clock;

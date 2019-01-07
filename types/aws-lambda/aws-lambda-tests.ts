@@ -8,6 +8,7 @@ declare let error: Error;
 declare let bool: boolean;
 declare let boolOrUndefined: boolean | undefined;
 declare let apiGwEvtReqCtx: AWSLambda.APIGatewayEventRequestContext;
+declare let apiGwEvtReqCtxOpt: AWSLambda.APIGatewayEventRequestContext | null | undefined;
 declare let apiGwEvt: AWSLambda.APIGatewayEvent;
 declare let customAuthorizerEvt: AWSLambda.CustomAuthorizerEvent;
 declare let clientCtx: AWSLambda.ClientContext;
@@ -102,11 +103,13 @@ str = apiGwEvtReqCtx.resourcePath;
 /* API Gateway Event */
 strOrNull = apiGwEvt.body;
 str = apiGwEvt.headers["example"];
+str = apiGwEvt.multiValueHeaders["example"][0];
 str = apiGwEvt.httpMethod;
 bool = apiGwEvt.isBase64Encoded;
 str = apiGwEvt.path;
 str = apiGwEvt.pathParameters!["example"];
 str = apiGwEvt.queryStringParameters!["example"];
+str = apiGwEvt.multiValueQueryStringParameters!["example"][0];
 str = apiGwEvt.stageVariables!["example"];
 apiGwEvtReqCtx = apiGwEvt.requestContext;
 str = apiGwEvt.resource;
@@ -115,10 +118,18 @@ str = apiGwEvt.resource;
 str = customAuthorizerEvt.type;
 str = customAuthorizerEvt.methodArn;
 strOrUndefined = customAuthorizerEvt.authorizationToken;
-str = apiGwEvt.pathParameters!["example"];
-str = apiGwEvt.queryStringParameters!["example"];
-str = apiGwEvt.stageVariables!["example"];
-apiGwEvtReqCtx = apiGwEvt.requestContext;
+strOrUndefined = customAuthorizerEvt.resource;
+strOrUndefined = customAuthorizerEvt.path;
+strOrUndefined = customAuthorizerEvt.httpMethod;
+str = customAuthorizerEvt.headers!["example"];
+str = customAuthorizerEvt.multiValueHeaders!["example"][0];
+str = customAuthorizerEvt.pathParameters!["example"];
+str = customAuthorizerEvt.queryStringParameters!["example"];
+str = customAuthorizerEvt.multiValueQueryStringParameters!["example"][0];
+str = customAuthorizerEvt.stageVariables!["example"];
+apiGwEvtReqCtxOpt = customAuthorizerEvt.requestContext;
+strOrUndefined = customAuthorizerEvt.domainName;
+strOrUndefined = customAuthorizerEvt.apiId;
 
 /* DynamoDB Stream Event */
 const dynamoDBStreamEvent: AWSLambda.DynamoDBStreamEvent = {
@@ -245,6 +256,9 @@ num = proxyResult.statusCode;
 proxyResult.headers!["example"] = str;
 proxyResult.headers!["example"] = bool;
 proxyResult.headers!["example"] = num;
+proxyResult.multiValueHeaders!["example"][0] = str;
+proxyResult.multiValueHeaders!["example"][0] = bool;
+proxyResult.multiValueHeaders!["example"][0] = num;
 boolOrUndefined = proxyResult.isBase64Encoded;
 str = proxyResult.body;
 
@@ -383,6 +397,8 @@ cognitoUserPoolEvent.triggerSource === "TokenGeneration_Authentication";
 cognitoUserPoolEvent.triggerSource === "TokenGeneration_NewPasswordChallenge";
 cognitoUserPoolEvent.triggerSource === "TokenGeneration_AuthenticateDevice";
 cognitoUserPoolEvent.triggerSource === "TokenGeneration_RefreshTokens";
+cognitoUserPoolEvent.triggerSource === "UserMigration_Authentication";
+cognitoUserPoolEvent.triggerSource === "UserMigration_ForgotPassword";
 str = cognitoUserPoolEvent.region;
 str = cognitoUserPoolEvent.userPoolId;
 strOrUndefined = cognitoUserPoolEvent.userName;
@@ -404,6 +420,7 @@ strOrUndefined = cognitoUserPoolEvent.request.session![0].challengeMetadata;
 strOrUndefined = cognitoUserPoolEvent.request.challengeName;
 str = cognitoUserPoolEvent.request.privateChallengeParameters!["answer"];
 str = cognitoUserPoolEvent.request.challengeAnswer!;
+strOrUndefined = cognitoUserPoolEvent.request.password;
 boolOrUndefined = cognitoUserPoolEvent.response.answerCorrect;
 strOrUndefined = cognitoUserPoolEvent.response.smsMessage;
 strOrUndefined = cognitoUserPoolEvent.response.emailMessage;
@@ -415,6 +432,14 @@ str = cognitoUserPoolEvent.response.publicChallengeParameters!["captchaUrl"];
 str = cognitoUserPoolEvent.response.privateChallengeParameters!["answer"];
 strOrUndefined = cognitoUserPoolEvent.response.challengeMetadata;
 boolOrUndefined = cognitoUserPoolEvent.response.answerCorrect;
+str = cognitoUserPoolEvent.response.userAttributes!["username"];
+cognitoUserPoolEvent.response.finalUserStatus === "CONFIRMED";
+cognitoUserPoolEvent.response.finalUserStatus === "RESET_REQUIRED";
+cognitoUserPoolEvent.response.messageAction === "SUPPRESS";
+cognitoUserPoolEvent.response.desiredDeliveryMediums === ["EMAIL"];
+cognitoUserPoolEvent.response.desiredDeliveryMediums === ["SMS"];
+cognitoUserPoolEvent.response.desiredDeliveryMediums === ["SMS", "EMAIL"];
+boolOrUndefined = cognitoUserPoolEvent.response.forceAliasCreation;
 
 // CloudFormation Custom Resource
 switch (cloudformationCustomResourceEvent.RequestType) {
@@ -579,6 +604,27 @@ const CodePipelineEvent: AWSLambda.CodePipelineEvent = {
 };
 
 CodePipelineEvent["CodePipeline.job"].data.encryptionKey = { type: 'KMS', id: 'key' };
+
+/* CodePipeline CloudWatch Events
+ * see https://docs.aws.amazon.com/codepipeline/latest/userguide/detect-state-changes-cloudwatch-events.html
+ * Their documentation says that detail.version is a string, but it is actually an integer
+ */
+const CodePipelineCloudWatchEvent: AWSLambda.CodePipelineCloudWatchEvent = {
+    version: '0',
+    id: 'event_Id',
+    'detail-type': 'CodePipeline Pipeline Execution State Change',
+    source: 'aws.codepipeline',
+    account: 'Pipeline_Account',
+    time: 'TimeStamp',
+    region: 'us-east-1',
+    resources: ['arn:aws:codepipeline:us-east-1:account_ID:myPipeline'],
+    detail: {
+        pipeline: 'myPipeline',
+        version: 1,
+        state: 'STARTED',
+        'execution-id': 'execution_Id',
+    },
+};
 
 /* CloudFront events, see http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html */
 const CloudFrontRequestWithCustomOriginEvent: AWSLambda.CloudFrontRequestEvent = {

@@ -251,6 +251,12 @@ jest
     .useFakeTimers()
     .useRealTimers();
 
+// https://jestjs.io/docs/en/jest-object#jestrequireactualmodulename
+jest.requireActual("./thisReturnsTheActualModule");
+
+// https://jestjs.io/docs/en/jest-object#jestrequiremockmodulename
+jest.requireMock("./thisAlwaysReturnsTheMock");
+
 /* Mocks and spies */
 
 const mock1: jest.Mock = jest.fn();
@@ -434,10 +440,26 @@ expect.extend({
     }
 });
 expect.extend({
+    foo(this: jest.MatcherUtils, received: {}, ...actual: Array<{}>) {
+        return {
+            message: JSON.stringify(received),
+            pass: false,
+        };
+    }
+});
+expect.extend({
     async foo(this: jest.MatcherUtils, received: {}, ...actual: Array<{}>) {
         return {
             message: () => JSON.stringify(received),
             pass: false,
+        };
+    }
+});
+expect.extend({
+    async foo(this: jest.MatcherUtils, received: {}, ...actual: Array<{}>) {
+        return {
+            message: JSON.stringify(received),
+            pass: false
         };
     }
 });
@@ -729,6 +751,13 @@ describe("", () => {
             }),
             ghi: expect.stringMatching("foo"),
         }));
+
+        /* Inverse type matchers */
+
+        expect('How are you?').toEqual(expect.not.stringContaining('Hello world!'));
+        expect('How are you?').toEqual(expect.not.stringMatching(/Hello world!/));
+        expect({bar: 'baz'}).toEqual(expect.not.objectContaining({foo: 'bar'}));
+        expect(['Alice', 'Bob', 'Eve']).toEqual(expect.not.arrayContaining(['Samantha']));
 
         /* Miscellaneous */
 
