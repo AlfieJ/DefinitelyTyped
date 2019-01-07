@@ -594,6 +594,7 @@ declare namespace Chart {
         ticks?: TickOptions;
         xAxes?: ChartXAxe[];
         yAxes?: ChartYAxe[];
+        id?: string;
     }
 
     interface CommonAxe {

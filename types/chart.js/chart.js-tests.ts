@@ -62,7 +62,8 @@ const chart: Chart = new Chart(ctx, {
                         zeroLineBorderDashOffset: 2
                     }
                 }
-            ]
+            ],
+            id: "testScale"
         },
         legend: {
             display: true,
